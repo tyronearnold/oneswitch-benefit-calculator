@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgrigateOne - OneSwitch Benefit Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Maven+Pro:wght@400;500;700&family=Sanchez&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Maven Pro', sans-serif; 
+            background-color: #ffffff; /* AgrigateOne White background */
+            color: #333333; /* Default dark text for readability */
+        }
+        .font-heading { font-family: 'Sanchez', serif; }
+
+        /* AgrigateOne Brand Colors from PDF */
+        :root {
+            --ag-blue: #0f4372;
+            --ag-yellow: #fcaf17;
+            --ag-green: #9bbe3b;
+            --ag-white: #ffffff;
+            --ag-purple: #6b2468; 
+            --ag-orange: #f68b1f; 
+            --ag-turquoise: #0f6674; 
+            --text-dark: #333333; 
+            --text-medium: #555555; 
+        }
+
+        .input-label { @apply block text-sm font-medium mb-1; color: var(--text-medium); }
+        .input-field { 
+            @apply mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none sm:text-sm; 
+            font-family: 'Maven Pro', sans-serif;
+            color: var(--text-dark);
+        }
+        .input-field:focus {
+            border-color: var(--ag-green); 
+            box-shadow: 0 0 0 0.2rem rgba(155, 190, 59, 0.25); 
+        }
+        .output-label { @apply text-sm font-medium; color: var(--text-medium); }
+        .output-value { @apply mt-1 text-lg font-semibold; color: var(--text-dark); }
+        .card { @apply bg-white shadow-lg rounded-lg p-6; } 
+        
+        .primary-metric { 
+            @apply text-3xl font-bold; 
+            color: var(--ag-green); 
+            font-family: 'Sanchez', serif;
+        }
+        #savingsChart svg {
+            display: block;
+            margin: auto;
+            font-family: 'Maven Pro', sans-serif;
+        }
+        
+        .banner-container { 
+            @apply w-full mb-4; 
+        }
+        .banner-image {
+            @apply w-full h-auto rounded-lg shadow-md block; 
+        }
+        
+        .text-ag-blue { color: var(--ag-blue); }
+        .text-ag-green { color: var(--ag-green); }
+        .text-ag-yellow { color: var(--ag-yellow); }
+        .bg-ag-blue { background-color: var(--ag-blue); }
+        .bg-ag-green { background-color: var(--ag-green); }
+        .bg-ag-yellow { background-color: var(--ag-yellow); }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--ag-green); 
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: var(--ag-green); 
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+        input[type="checkbox"]:checked {
+            background-color: var(--ag-green); 
+            border-color: var(--ag-green); 
+        }
+        input[type="checkbox"]:checked:focus {
+             border-color: var(--ag-green); 
+             box-shadow: 0 0 0 0.2rem rgba(155, 190, 59, 0.25);
+        }
+        .footer-text { color: var(--text-medium); }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="container mx-auto max-w-4xl">
+        <div class="banner-container"> 
+            <img src="https://139764552.fs1.hubspotusercontent-eu1.net/hubfs/139764552/AG1_%20General%20Banner%201584x396.png" 
+                 alt="AgrigateOne Banner" 
+                 class="banner-image"
+                 onerror="this.alt='AgrigateOne Banner failed to load'; this.style.display='block'; this.style.textAlign='center'; this.style.padding='20px'; this.style.border='1px dashed #ccc'; this.parentElement.style.minHeight='100px';">
+        </div>
+
+        <header class="mb-8 text-center">
+            <h1 class="font-heading text-3xl font-bold text-ag-blue">OneSwitch Benefit Dashboard</h1>
+            <p class="text-md" style="color: var(--text-medium);">Calculate potential savings by routing citrus volume through OneSwitch.</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="md:col-span-1 card">
+                <h2 class="font-heading text-xl font-semibold text-ag-blue mb-4">Inputs</h2>
+                
+                <div>
+                    <label for="totalCartonsInput" class="input-label">Total Annual Citrus Cartons</label>
+                    <input type="number" id="totalCartonsInput" class="input-field" value="900000">
+                </div>
+
+                <div class="mt-4">
+                    <label for="percentageOneSwitchInput" class="input-label">Percentage via OneSwitch (%)</label>
+                    <input type="range" id="percentageOneSwitchInput" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" min="0" max="100" value="10" style="accent-color: var(--ag-green);">
+                    <div class="text-center text-sm mt-1" style="color: var(--text-medium);"><span id="percentageOneSwitchValue">10</span>%</div>
+                </div>
+
+                <div class="mt-4">
+                    <label for="avgCIFPriceInput" class="input-label">Avg. CIF Price per Carton (ZAR)</label>
+                    <input type="number" id="avgCIFPriceInput" class="input-field" value="220"> 
+                </div>
+
+                <div class="mt-4">
+                    <label for="avgFOBPriceInput" class="input-label">Avg. FOB Price per Carton (ZAR) <span class="text-xs text-gray-400">(Informational)</span></label>
+                    <input type="number" id="avgFOBPriceInput" class="input-field" value="180"> 
+                </div>
+                
+                <div class="mt-4">
+                    <label for="traditionalExporterCommissionInput" class="input-label">Traditional Exporter Commission (%)</label>
+                    <input type="number" id="traditionalExporterCommissionInput" class="input-field" value="8">
+                </div>
+
+                <div class="mt-4">
+                    <label for="exchangeRateInput" class="input-label">Exchange Rate (GBP to ZAR)</label>
+                    <input type="number" id="exchangeRateInput" class="input-field" step="0.01" value="24.00">
+                </div>
+                
+                <div class="mt-6 border-t pt-4">
+                    <h3 class="font-heading text-md font-semibold text-ag-blue mb-2">Optional Costs/Fees:</h3>
+                    <div class="flex items-center mt-2">
+                        <input id="includeOneSwitchCommissionCheckbox" type="checkbox" class="h-4 w-4 border-gray-300 rounded focus:ring-ag-green focus:ring-opacity-50" checked>
+                        <label for="includeOneSwitchCommissionCheckbox" class="ml-2 block text-sm" style="color: var(--text-dark);">Include OneSwitch Platform Fee</label>
+                    </div>
+                    <div class="flex items-center mt-2">
+                        <input id="includeOneQualityCheckbox" type="checkbox" class="h-4 w-4 border-gray-300 rounded focus:ring-ag-green focus:ring-opacity-50">
+                        <label for="includeOneQualityCheckbox" class="ml-2 block text-sm" style="color: var(--text-dark);">Include OneQuality Cost</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="md:col-span-2 card">
+                <h2 class="font-heading text-xl font-semibold text-ag-blue mb-4">Calculated Benefits</h2>
+                
+                <div class="text-center mb-6">
+                    <div class="output-label">Net Financial Benefit (ZAR)</div>
+                    <div id="netFinancialBenefitZARDisplay" class="primary-metric font-bold">R0</div> 
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <span class="output-label">Cartons via OneSwitch:</span>
+                        <span id="oneSwitchCartonsDisplay" class="output-value float-right">0</span>
+                    </div>
+                    <div>
+                        <span class="output-label">Commission Saving:</span> 
+                        <span id="commissionSavingZARDisplay" class="output-value float-right">R0</span>
+                    </div>
+                    <div>
+                        <span class="output-label">OneFlow Cost (ZAR):</span>
+                        <span id="oneFlowCostZARDisplay" class="output-value float-right">R0</span>
+                    </div>
+                    <div>
+                        <span class="output-label">OneSwitch Platform Fee (ZAR):</span>
+                        <span id="oneSwitchCommissionZARDisplay" class="output-value float-right">R0</span>
+                    </div>
+                    <div>
+                        <span class="output-label">OneQuality Cost (ZAR):</span>
+                        <span id="oneQualityCostZARDisplay" class="output-value float-right">R0</span>
+                    </div>
+                    <div class="sm:col-span-2 mt-2 border-t pt-2"> 
+                        <span class="output-label">Effective Saving per OneSwitch Carton (ZAR):</span>
+                        <span id="effectiveRateDisplay" class="output-value float-right">R0</span>
+                    </div>
+                </div>
+                
+                <div class="mt-6 border-t pt-4">
+                     <h3 class="font-heading text-md font-semibold text-ag-blue mb-2">Benefit Visualisation</h3>
+                     <div id="savingsChart" class="w-full h-64 bg-gray-50 p-2 rounded-md"></div>
+                </div>
+            </div>
+        </div>
+         <footer class="text-center mt-8 text-sm footer-text">
+            <p>This dashboard provides an estimate. Actual savings may vary. All SaaS & Platform fees are illustrative.</p>
+            <p>Commission saving based on CIF price. OneFlow cost is a sum of modules. OneSwitch Platform Fee applies to CIF value. Other costs are optional.</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- Configuration Data (from Price Books) ---
+        const ONEQUALITY_BASE_COST_GBP = 1250;
+        const ONESWITCH_COMMISSION_RATE = 0.02; // This is the rate for the platform fee calculation
+
+        // AgrigateOne Brand Colors from PDF (for JS use, e.g., D3 chart)
+        const agBlue = '#0f4372';
+        const agYellow = '#fcaf17';
+        const agGreen = '#9bbe3b';
+
+        // OneFlow Tiered Pricing for Citrus (GBP per carton)
+        const oneFlowCitrusTraceTiersGBP = [
+            { maxCartons: 250000, feePerCarton: 0.0080 }, { maxCartons: 500000, feePerCarton: 0.0048 },
+            { maxCartons: 750000, feePerCarton: 0.0040 }, { maxCartons: 1000000, feePerCarton: 0.00288 },
+            { maxCartons: 1500000, feePerCarton: 0.0032 }, { maxCartons: 2000000, feePerCarton: 0.0028 },
+            { maxCartons: 3000000, feePerCarton: 0.0024 }, { maxCartons: Infinity, feePerCarton: 0.0020 } 
+        ];
+        const oneFlowCitrusPlanTiersGBP = [
+            { maxCartons: 250000, feePerCarton: 0.0020 }, { maxCartons: 500000, feePerCarton: 0.0012 },
+            { maxCartons: 750000, feePerCarton: 0.0010 }, { maxCartons: 1000000, feePerCarton: 0.0036 },
+            { maxCartons: 1500000, feePerCarton: 0.0008 }, { maxCartons: 2000000, feePerCarton: 0.0007 },
+            { maxCartons: 3000000, feePerCarton: 0.0006 }, { maxCartons: Infinity, feePerCarton: 0.0005 }
+        ];
+        const oneFlowCitrusMoveTiersGBP = [ 
+            { maxCartons: 250000, feePerCarton: 0.0020 }, { maxCartons: 500000, feePerCarton: 0.0012 },
+            { maxCartons: 750000, feePerCarton: 0.0010 }, { maxCartons: 1000000, feePerCarton: 0.00288 },
+            { maxCartons: 1500000, feePerCarton: 0.0008 }, { maxCartons: 2000000, feePerCarton: 0.0007 },
+            { maxCartons: 3000000, feePerCarton: 0.0006 }, { maxCartons: Infinity, feePerCarton: 0.0005 }
+        ];
+        const oneFlowCitrusTransactTiersGBP = [ 
+            { maxCartons: 250000, feePerCarton: 0.0020 }, { maxCartons: 500000, feePerCarton: 0.0012 },
+            { maxCartons: 750000, feePerCarton: 0.0010 }, { maxCartons: 1000000, feePerCarton: 0.00288 },
+            { maxCartons: 1500000, feePerCarton: 0.0008 }, { maxCartons: 2000000, feePerCarton: 0.0007 },
+            { maxCartons: 3000000, feePerCarton: 0.0006 }, { maxCartons: Infinity, feePerCarton: 0.0005 }
+        ];
+
+        // --- DOM Elements ---
+        const totalCartonsInput = document.getElementById('totalCartonsInput');
+        const percentageOneSwitchInput = document.getElementById('percentageOneSwitchInput');
+        const percentageOneSwitchValue = document.getElementById('percentageOneSwitchValue');
+        const avgCIFPriceInput = document.getElementById('avgCIFPriceInput'); 
+        const avgFOBPriceInput = document.getElementById('avgFOBPriceInput');
+        const traditionalExporterCommissionInput = document.getElementById('traditionalExporterCommissionInput'); 
+        const exchangeRateInput = document.getElementById('exchangeRateInput');
+        
+        const includeOneSwitchCommissionCheckbox = document.getElementById('includeOneSwitchCommissionCheckbox');
+        const includeOneQualityCheckbox = document.getElementById('includeOneQualityCheckbox');
+
+        const oneSwitchCartonsDisplay = document.getElementById('oneSwitchCartonsDisplay');
+        const oneFlowCostZARDisplay = document.getElementById('oneFlowCostZARDisplay');
+        const oneSwitchCommissionZARDisplay = document.getElementById('oneSwitchCommissionZARDisplay');
+        const oneQualityCostZARDisplay = document.getElementById('oneQualityCostZARDisplay');
+        // const totalCostsZARDisplay = document.getElementById('totalCostsZARDisplay'); // Reference removed in previous correct version
+        const commissionSavingZARDisplay = document.getElementById('commissionSavingZARDisplay');
+        const netFinancialBenefitZARDisplay = document.getElementById('netFinancialBenefitZARDisplay');
+        const effectiveRateDisplay = document.getElementById('effectiveRateDisplay');
+        
+        const chartContainer = d3.select("#savingsChart");
+
+        // --- Helper Functions ---
+        function formatCurrency(value, currency = 'ZAR') {
+            if (isNaN(value)) return currency === 'ZAR' ? 'R0' : `${currency} 0`; 
+            const roundedValue = Math.round(value); 
+            return currency === 'ZAR' ? 
+                   `R${roundedValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')}` : 
+                   `${currency} ${roundedValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+        }
+
+        function calculateTieredModuleCostGBP(totalCartons, tiersArray) {
+            if (totalCartons <= 0) return 0;
+            for (const tier of tiersArray) {
+                if (totalCartons <= tier.maxCartons) {
+                    return totalCartons * tier.feePerCarton;
+                }
+            }
+            return totalCartons * tiersArray[tiersArray.length - 1].feePerCarton; 
+        }
+        
+        function calculateOneFlowCostGBP(totalCartons) {
+            const traceCost = calculateTieredModuleCostGBP(totalCartons, oneFlowCitrusTraceTiersGBP);
+            const planCost = calculateTieredModuleCostGBP(totalCartons, oneFlowCitrusPlanTiersGBP);
+            const moveCost = calculateTieredModuleCostGBP(totalCartons, oneFlowCitrusMoveTiersGBP);
+            const transactCost = calculateTieredModuleCostGBP(totalCartons, oneFlowCitrusTransactTiersGBP);
+            return traceCost + planCost + moveCost + transactCost;
+        }
+
+        // --- Main Calculation and Update Function ---
+        function updateDashboard() {
+            const totalCartons = parseFloat(totalCartonsInput.value) || 0;
+            const percentageOneSwitch = parseFloat(percentageOneSwitchInput.value) || 0;
+            const avgCIFPriceZAR = parseFloat(avgCIFPriceInput.value) || 0; 
+            const traditionalExporterCommissionRate = (parseFloat(traditionalExporterCommissionInput.value) || 0) / 100; 
+            const exchangeRate = parseFloat(exchangeRateInput.value) || 0;
+
+            const includeOneSwitchCommission = includeOneSwitchCommissionCheckbox.checked; 
+            const includeOneQuality = includeOneQualityCheckbox.checked;
+
+            percentageOneSwitchValue.textContent = percentageOneSwitch;
+
+            const oneSwitchCartons = totalCartons * (percentageOneSwitch / 100);
+
+            const oneFlowCostGBP = calculateOneFlowCostGBP(totalCartons); 
+            const oneQualityCostGBP = includeOneQuality ? ONEQUALITY_BASE_COST_GBP : 0;
+            
+            const oneSwitchPlatformFeeZAR = includeOneSwitchCommission && oneSwitchCartons > 0 ? 
+                                          oneSwitchCartons * avgCIFPriceZAR * ONESWITCH_COMMISSION_RATE : 0;
+
+            const oneFlowCostZAR = oneFlowCostGBP * exchangeRate;
+            const oneQualityCostZAR = oneQualityCostGBP * exchangeRate;
+
+            const totalCostsZAR = oneFlowCostZAR + oneQualityCostZAR + oneSwitchPlatformFeeZAR; 
+            const softwareCostForChartZAR = oneFlowCostZAR + oneQualityCostZAR; 
+
+            const commissionRateDifference = traditionalExporterCommissionRate - ONESWITCH_COMMISSION_RATE; 
+            const commissionSavingZAR = oneSwitchCartons * avgCIFPriceZAR * commissionRateDifference;
+
+            const netFinancialBenefitZAR = commissionSavingZAR - totalCostsZAR;
+            const effectiveRateZAR = oneSwitchCartons > 0 ? netFinancialBenefitZAR / oneSwitchCartons : 0;
+
+            oneSwitchCartonsDisplay.textContent = Math.round(oneSwitchCartons).toLocaleString();
+            oneFlowCostZARDisplay.textContent = formatCurrency(oneFlowCostZAR);
+            oneSwitchCommissionZARDisplay.textContent = formatCurrency(oneSwitchPlatformFeeZAR); 
+            oneQualityCostZARDisplay.textContent = formatCurrency(oneQualityCostZAR);
+            // totalCostsZARDisplay.textContent = formatCurrency(totalCostsZAR); // This line was correctly removed in the target version
+            commissionSavingZARDisplay.textContent = formatCurrency(commissionSavingZAR);
+            netFinancialBenefitZARDisplay.textContent = formatCurrency(netFinancialBenefitZAR);
+            effectiveRateDisplay.textContent = formatCurrency(effectiveRateDisplay);
+            
+            drawChart(commissionSavingZAR, softwareCostForChartZAR, netFinancialBenefitZAR);
+        }
+        
+        // --- D3 Chart ---
+        function drawChart(commissionSaving, softwareCostForChart, netBenefit) {
+            chartContainer.selectAll("*").remove(); 
+
+            const data = [
+                { label: "Commission Saving", value: Math.max(0, commissionSaving) }, 
+                { label: "Software Cost", value: Math.max(0, softwareCostForChart) }, 
+                { label: "Net Benefit", value: netBenefit } 
+            ];
+
+            const margin = {top: 20, right: 30, bottom: 40, left: 60};
+            const containerNode = chartContainer.node();
+            const containerWidth = containerNode ? containerNode.getBoundingClientRect().width : 300; 
+            
+            const width = containerWidth - margin.left - margin.right;
+            const height = 256 - margin.top - margin.bottom; 
+
+            const svg = chartContainer.append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+              .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const y = d3.scaleLinear()
+                .domain([
+                    d3.min(data, d => Math.min(0, d.value)), 
+                    d3.max(data, d => d.value)
+                ])
+                .range([height, 0]);
+
+            const x = d3.scaleBand()
+                .domain(data.map(d => d.label))
+                .range([0, width])
+                .padding(0.3);
+
+            svg.append("g") // Y-axis
+               .call(d3.axisLeft(y).ticks(5).tickFormat(d => `R${Math.round(d/1000)}k`))
+               .selectAll("text") // Style Y-axis tick labels
+                 .style("font-family", "'Maven Pro', sans-serif")
+                 .style("fill", "var(--text-medium)");
+
+
+            svg.append("g") // X-axis
+               .attr("transform", `translate(0,${y(0)})`) 
+               .call(d3.axisBottom(x))
+               .selectAll("text") // Style X-axis tick labels
+                 .style("font-family", "'Maven Pro', sans-serif")
+                 .style("fill", "var(--text-medium)")
+                 .style("text-anchor", "middle");
+            
+            svg.selectAll(".bar")
+               .data(data)
+               .enter().append("rect")
+                 .attr("class", "bar")
+                 .attr("x", d => x(d.label))
+                 .attr("y", d => d.value >= 0 ? y(d.value) : y(0))
+                 .attr("width", x.bandwidth())
+                 .attr("height", d => Math.abs(y(d.value) - y(0)))
+                 .attr("fill", d => {
+                    if (d.label === "Net Benefit") return d.value >= 0 ? agGreen : "#EF4444"; 
+                    return d.label === "Commission Saving" ? agBlue : agYellow; 
+                 });
+            
+            svg.selectAll(".bar-label")
+                .data(data)
+                .enter().append("text")
+                .attr("class", "bar-label")
+                .attr("x", d => x(d.label) + x.bandwidth() / 2)
+                .attr("y", d => (d.value >=0 ? y(d.value) : y(d.value)) + (d.value >=0 ? -5 : 15) ) 
+                .attr("text-anchor", "middle")
+                .style("font-size", "10px") 
+                .style("font-family", "'Maven Pro', sans-serif")
+                .style("fill", "var(--text-dark)")
+                .text(d => formatCurrency(d.value)); 
+        }
+
+        // --- Event Listeners ---
+        totalCartonsInput.addEventListener('input', updateDashboard);
+        percentageOneSwitchInput.addEventListener('input', updateDashboard);
+        avgCIFPriceInput.addEventListener('input', updateDashboard); 
+        avgFOBPriceInput.addEventListener('input', updateDashboard);
+        traditionalExporterCommissionInput.addEventListener('input', updateDashboard); 
+        exchangeRateInput.addEventListener('input', updateDashboard);
+        
+        includeOneSwitchCommissionCheckbox.addEventListener('change', updateDashboard); 
+        includeOneQualityCheckbox.addEventListener('change', updateDashboard);
+        
+        document.addEventListener('DOMContentLoaded', updateDashboard);
+        window.addEventListener('resize', updateDashboard); 
+
+    </script>
+</body>
+</html>
